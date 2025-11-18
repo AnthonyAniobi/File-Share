@@ -1,9 +1,14 @@
+import socket
 from django.shortcuts import render, redirect
 from .models import SharedItem
 
 def home(request):
     shared_items = SharedItem.objects.all().order_by('-uploaded_at')
-    return render(request, "home.html", {"items": shared_items})
+    # server
+    hostname = socket.gethostname()
+    ip_address = socket.gethostbyname(hostname)
+
+    return render(request, "home.html", {"items": shared_items, "ip_address": ip_address})
 
 def share(request):
     if request.method == "POST":
