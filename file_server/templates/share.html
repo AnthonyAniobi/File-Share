@@ -1,10 +1,209 @@
-<form method="POST" enctype="multipart/form-data">
-  {% csrf_token %}
-  <label>Your Name:</label>
-  <input name="name">
+{% extends 'base.html' %}
 
-  <br><br>
+{% block title %}Share a File - FileShare{% endblock title %}
 
-  <input type="file" name="file">
-  <button type="submit">Share</button>
-</form>
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="mb-8 text-center">
+        <h1 class="text-4xl font-bold text-gray-900 mb-2">Share a File</h1>
+        <p class="text-gray-600">Upload a file to share with others</p>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-lg p-8">
+        <form method="POST" enctype="multipart/form-data" id="uploadForm">
+            {% csrf_token %}
+            
+            <!-- Name Input -->
+            <div class="mb-6">
+                <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                    Your Name
+                </label>
+                <input 
+                    type="text" 
+                    name="name" 
+                    id="name" 
+                    placeholder="Enter your name"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-150"
+                    required
+                >
+            </div>
+
+            <!-- Drag and Drop Zone -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    File
+                </label>
+                
+                <div 
+                    id="dropZone" 
+                    class="relative border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-blue-500 transition-colors duration-300 cursor-pointer bg-gray-50"
+                >
+                    <input 
+                        type="file" 
+                        name="file" 
+                        id="fileInput" 
+                        class="hidden"
+                        required
+                    >
+                    
+                    <div id="dropZoneContent">
+                        <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        <p class="text-lg font-medium text-gray-700 mb-1">
+                            Drop your file here
+                        </p>
+                        <p class="text-sm text-gray-500 mb-4">or</p>
+                        <button 
+                            type="button" 
+                            id="browseButton"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition duration-150 shadow-sm"
+                        >
+                            Browse Files
+                        </button>
+                    </div>
+
+                    <div id="fileInfo" class="hidden">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <svg class="w-8 h-8 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <div>
+                                        <p id="fileName" class="font-medium text-gray-800"></p>
+                                        <p id="fileSize" class="text-sm text-gray-500"></p>
+                                    </div>
+                                </div>
+                                <button 
+                                    type="button" 
+                                    id="removeFile"
+                                    class="text-red-600 hover:text-red-700 transition duration-150"
+                                >
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <button 
+                            type="button" 
+                            id="changeFile"
+                            class="text-blue-600 hover:text-blue-700 font-medium transition duration-150"
+                        >
+                            Change File
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button 
+                type="submit" 
+                class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-3 px-6 rounded-lg font-medium transition duration-150 shadow-md transform hover:scale-105"
+            >
+                <span class="flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                    </svg>
+                    Share File
+                </span>
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const browseButton = document.getElementById('browseButton');
+    const dropZoneContent = document.getElementById('dropZoneContent');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const removeFile = document.getElementById('removeFile');
+    const changeFile = document.getElementById('changeFile');
+
+    // Format file size
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    // Update file info display
+    function updateFileInfo(file) {
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+        dropZoneContent.classList.add('hidden');
+        fileInfo.classList.remove('hidden');
+        dropZone.classList.remove('border-gray-300', 'bg-gray-50');
+        dropZone.classList.add('border-blue-500', 'bg-blue-50');
+    }
+
+    // Clear file info
+    function clearFileInfo() {
+        fileInput.value = '';
+        dropZoneContent.classList.remove('hidden');
+        fileInfo.classList.add('hidden');
+        dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+        dropZone.classList.add('border-gray-300', 'bg-gray-50');
+    }
+
+    // Browse button click
+    browseButton.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    // Change file button click
+    changeFile.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    // Remove file button click
+    removeFile.addEventListener('click', () => {
+        clearFileInfo();
+    });
+
+    // File input change
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            updateFileInfo(e.target.files[0]);
+        }
+    });
+
+    // Drag and drop events
+    dropZone.addEventListener('click', (e) => {
+        if (e.target === dropZone || e.target === dropZoneContent) {
+            fileInput.click();
+        }
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-blue-500', 'bg-blue-50');
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        if (!fileInput.files.length) {
+            dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+            dropZone.classList.add('border-gray-300', 'bg-gray-50');
+        }
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            updateFileInfo(files[0]);
+        }
+    });
+</script>
+{% endblock extra_js %}
