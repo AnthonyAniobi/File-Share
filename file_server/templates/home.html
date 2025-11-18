@@ -1,0 +1,14 @@
+<h2>Shared Files</h2>
+
+<a href="/share/">Share File</a>
+
+<div style="display:flex; flex-wrap:wrap;">
+  {% for item in items %}
+    <div style="width:150px; margin:10px; text-align:center;">
+      <img src="/static/file.png" width="80">
+      <p>{{ item.filename }}</p>
+      <p>Shared by: {{ item.shared_by }}</p>
+      <a href="{{ item.file.url }}">Download</a>
+    </div>
+  {% endfor %}
+</div>

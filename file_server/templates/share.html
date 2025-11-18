@@ -1,0 +1,10 @@
+<form method="POST" enctype="multipart/form-data">
+  {% csrf_token %}
+  <label>Your Name:</label>
+  <input name="name">
+
+  <br><br>
+
+  <input type="file" name="file">
+  <button type="submit">Share</button>
+</form>
