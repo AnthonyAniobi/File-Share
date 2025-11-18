@@ -3,14 +3,122 @@
 {% block title %}Share a File - FileShare{% endblock %}
 
 {% block content %}
-<form method="POST" enctype="multipart/form-data">
-  {% csrf_token %}
-  <label>Your Name:</label>
-  <input name="name">
+<!-- Page Header -->
+<div class="page-header">
+    <h1 class="page-title">Share a File</h1>
+    <p class="page-subtitle">Upload and share your files with the community</p>
+</div>
 
-  <br><br>
+<!-- Share Form -->
+<div class="container-md">
+    <div class="card">
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <!-- Name Input -->
+            <div class="form-group">
+                <label for="name" class="form-label">Your Name</label>
+                <input 
+                    type="text" 
+                    name="name" 
+                    id="name" 
+                    class="form-input" 
+                    placeholder="Enter your name"
+                >
+            </div>
 
-  <input type="file" name="file">
-  <button type="submit">Share</button>
-</form>
-{% endblock content %}
+            <!-- Drag and Drop Zone -->
+            <div class="form-group">
+                <label class="form-label">Upload File</label>
+                
+                <div id="dropZone" class="drop-zone">
+                    <input 
+                        type="file" 
+                        name="file" 
+                        id="fileInput" 
+                        style="display: none;"
+                        required
+                    >
+                    
+                    <div id="dropZoneContent">
+                        <div class="drop-zone-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                        </div>
+                        <p class="drop-zone-text">Drop your file here</p>
+                        <p class="drop-zone-hint">or click to browse</p>
+                        <button type="button" class="btn btn-primary" onclick="document.getElementById('fileInput').click();">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
+                            </svg>
+                            Browse Files
+                        </button>
+                        <p class="drop-zone-hint mt-2">All file types supported</p>
+                    </div>
+
+                    <div id="filePreview" class="file-preview">
+                        <div class="file-preview-content">
+                            <div class="file-preview-info">
+                                <div class="file-preview-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                </div>
+                                <div class="file-preview-details">
+                                    <div id="filePreviewName" class="file-preview-name">filename.txt</div>
+                                    <div id="filePreviewSize" class="file-preview-size">0 KB</div>
+                                </div>
+                            </div>
+                            <button type="button" id="removeFileBtn" class="file-preview-remove">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-primary btn-large" style="width: 100%;">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                Share File Now
+            </button>
+        </form>
+    </div>
+
+    <!-- Info Card -->
+    <div class="card mt-4">
+        <h3 style="font-weight: 700; margin-bottom: 1rem; color: var(--gray-900);">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon" style="display: inline-block; vertical-align: middle; margin-right: 0.5rem; color: var(--primary-color);">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            How it works
+        </h3>
+        <ul style="list-style: none; padding: 0; color: var(--gray-700);">
+            <li style="padding: 0.5rem 0; display: flex; align-items: start;">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon" style="color: var(--success-color); margin-right: 0.75rem; flex-shrink: 0;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Drag and drop files directly into the upload area or click to browse</span>
+            </li>
+            <li style="padding: 0.5rem 0; display: flex; align-items: start;">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon" style="color: var(--success-color); margin-right: 0.75rem; flex-shrink: 0;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>All file types are supported - documents, images, videos, and more</span>
+            </li>
+            <li style="padding: 0.5rem 0; display: flex; align-items: start;">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon" style="color: var(--success-color); margin-right: 0.75rem; flex-shrink: 0;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Files are instantly shared and available for download to everyone</span>
+            </li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
