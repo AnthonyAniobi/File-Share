@@ -14,6 +14,7 @@
             this.filePreview = document.getElementById('filePreview');
             this.filePreviewName = document.getElementById('filePreviewName');
             this.filePreviewSize = document.getElementById('filePreviewSize');
+            this.browseBtn = document.getElementById('browseFilesBtn');
             
             if (this.dropZone && this.fileInput) {
                 this.init();
@@ -21,16 +22,19 @@
         }
 
         init() {
-            // Click to browse
-            this.dropZone.addEventListener('click', (e) => {
-                if (e.target !== this.fileInput && !e.target.classList.contains('file-preview-remove')) {
+            // Browse button click handler
+            if (this.browseBtn) {
+                this.browseBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     this.fileInput.click();
-                }
-            });
+                });
+            }
 
             // File input change
             this.fileInput.addEventListener('change', (e) => {
-                this.handleFiles(e.target.files);
+                if (e.target.files.length > 0) {
+                    this.displayFile(e.target.files[0]);
+                }
             });
 
             // Drag events
@@ -52,9 +56,17 @@
             });
 
             this.dropZone.addEventListener('drop', (e) => {
-                const dt = e.dataTransfer;
-                const files = dt.files;
-                this.handleFiles(files);
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    // Assign the dropped files directly to the file input
+                    this.fileInput.files = files;
+                    
+                    // Trigger change event to activate form validation
+                    const event = new Event('change', { bubbles: true });
+                    this.fileInput.dispatchEvent(event);
+                    
+                    this.displayFile(files[0]);
+                }
             }, false);
 
             // Remove file button
@@ -70,13 +82,6 @@
         preventDefaults(e) {
             e.preventDefault();
             e.stopPropagation();
-        }
-
-        handleFiles(files) {
-            if (files.length > 0) {
-                const file = files[0];
-                this.displayFile(file);
-            }
         }
 
         displayFile(file) {

@@ -296,12 +296,17 @@ main {
     margin-bottom: var(--spacing-sm);
 }
 
+.file-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
 .file-download {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 100%;
-    margin-top: var(--spacing-md);
+    flex: 1;
     padding: var(--spacing-sm) var(--spacing-md);
     background-color: var(--primary-color);
     color: var(--white);
@@ -309,10 +314,38 @@ main {
     border-radius: var(--radius-md);
     font-weight: 600;
     transition: var(--transition-fast);
+    font-size: 0.875rem;
 }
 
 .file-download:hover {
     background-color: var(--primary-dark);
+}
+
+.file-delete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: var(--error-color);
+    color: var(--white);
+    text-decoration: none;
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    transition: var(--transition-fast);
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-family: inherit;
+}
+
+.file-delete:hover {
+    background-color: #dc2626;
+    transform: translateY(-1px);
+}
+
+.file-delete:active {
+    transform: translateY(0);
 }
 
 /* Empty State */
