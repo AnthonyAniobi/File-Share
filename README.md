@@ -224,7 +224,7 @@ A: All file types are supported! Documents, images, videos, archives—anything 
 A: The only limit is your available disk space. The application itself doesn't impose size restrictions.
 
 **Q: Will files be deleted?**  
-A: No, files remain on the server until you manually delete them.
+A: Yes. Files are automatically deleted 5 minutes after upload (configurable via the `FILE_EXPIRY_SECONDS` environment variable) so the server doesn't accumulate old files. You can also delete a file manually at any time before then.
 
 **Q: Can multiple people upload at the same time?**  
 A: Yes! FileShare supports multiple simultaneous uploads.

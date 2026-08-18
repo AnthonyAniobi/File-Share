@@ -19,6 +19,11 @@ class Config:
     MEDIA_ROOT = BASE_DIR / "media"
     SHARED_UPLOAD_DIR = MEDIA_ROOT / "shared"
 
+    # Shared files (and their DB rows) are removed this long after upload,
+    # so the server doesn't accumulate files/rows over time.
+    FILE_EXPIRY_SECONDS = int(os.environ.get("FILE_EXPIRY_SECONDS", 300))
+    CLEANUP_INTERVAL_SECONDS = int(os.environ.get("CLEANUP_INTERVAL_SECONDS", 30))
+
 
 class DevelopmentConfig(Config):
     DEBUG = True

@@ -11,6 +11,7 @@ from flask import (
     url_for,
 )
 
+from ..cleanup import delete_expired_items
 from ..extensions import db
 from ..models import SharedItem
 from ..utils import get_unique_filename
@@ -19,6 +20,8 @@ from . import bp
 
 @bp.route("/")
 def home():
+    delete_expired_items(current_app._get_current_object())
+
     items = SharedItem.query.order_by(SharedItem.uploaded_at.desc()).all()
 
     hostname = socket.gethostname()

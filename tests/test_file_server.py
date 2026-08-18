@@ -1,5 +1,8 @@
 import io
+from datetime import datetime, timedelta
 
+from app.cleanup import delete_expired_items
+from app.extensions import db
 from app.models import SharedItem
 
 
@@ -50,6 +53,51 @@ def test_upload_lists_and_deletes_file(client, app):
     assert response.status_code == 200
     assert b"File deleted successfully" in response.data
     assert not stored_path.is_file()
+
+    with app.app_context():
+        assert SharedItem.query.count() == 0
+
+
+def test_expired_files_are_deleted(client, app):
+    data = {
+        "name": "Tester",
+        "file": (io.BytesIO(b"hello world"), "expiring.txt"),
+    }
+    client.post("/share/", data=data, content_type="multipart/form-data")
+
+    with app.app_context():
+        item = SharedItem.query.first()
+        stored_path = app.config["MEDIA_ROOT"] / item.file_path
+        assert stored_path.is_file()
+
+        # Backdate the upload so it's already past the expiry window.
+        item.uploaded_at = datetime.utcnow() - timedelta(
+            seconds=app.config["FILE_EXPIRY_SECONDS"] + 1
+        )
+        db.session.commit()
+
+        delete_expired_items(app)
+
+        assert SharedItem.query.count() == 0
+        assert not stored_path.is_file()
+
+
+def test_home_page_purges_expired_files(client, app):
+    data = {
+        "name": "Tester",
+        "file": (io.BytesIO(b"hello world"), "expiring.txt"),
+    }
+    client.post("/share/", data=data, content_type="multipart/form-data")
+
+    with app.app_context():
+        item = SharedItem.query.first()
+        item.uploaded_at = datetime.utcnow() - timedelta(
+            seconds=app.config["FILE_EXPIRY_SECONDS"] + 1
+        )
+        db.session.commit()
+
+    response = client.get("/")
+    assert b"expiring.txt" not in response.data
 
     with app.app_context():
         assert SharedItem.query.count() == 0
