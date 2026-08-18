@@ -58,6 +58,22 @@ def test_upload_lists_and_deletes_file(client, app):
         assert SharedItem.query.count() == 0
 
 
+def test_shared_file_is_downloadable(client, app):
+    data = {
+        "name": "Tester",
+        "file": (io.BytesIO(b"hello world"), "download.txt"),
+    }
+    client.post("/share/", data=data, content_type="multipart/form-data")
+
+    with app.app_context():
+        item = SharedItem.query.first()
+        download_url = f"/media/{item.file_path}"
+
+    response = client.get(download_url)
+    assert response.status_code == 200
+    assert response.data == b"hello world"
+
+
 def test_expired_files_are_deleted(client, app):
     data = {
         "name": "Tester",
