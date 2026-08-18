@@ -2,6 +2,7 @@ import io
 from datetime import datetime, timedelta
 
 from app.cleanup import delete_expired_items
+from app.events import subscribe, unsubscribe
 from app.extensions import db
 from app.models import SharedItem
 
@@ -117,3 +118,66 @@ def test_home_page_purges_expired_files(client, app):
 
     with app.app_context():
         assert SharedItem.query.count() == 0
+
+
+def test_upload_publishes_file_added_event(client, app):
+    q = subscribe()
+    try:
+        data = {
+            "name": "Tester",
+            "file": (io.BytesIO(b"hello world"), "live.txt"),
+        }
+        client.post("/share/", data=data, content_type="multipart/form-data")
+
+        message = q.get(timeout=1)
+        assert message.startswith("event: file-added\n")
+        assert "live.txt" in message
+    finally:
+        unsubscribe(q)
+
+
+def test_delete_publishes_file_removed_event(client, app):
+    data = {
+        "name": "Tester",
+        "file": (io.BytesIO(b"hello world"), "todelete.txt"),
+    }
+    client.post("/share/", data=data, content_type="multipart/form-data")
+
+    with app.app_context():
+        item_id = SharedItem.query.first().id
+
+    q = subscribe()
+    try:
+        client.post(f"/delete/{item_id}/")
+
+        message = q.get(timeout=1)
+        assert message.startswith("event: file-removed\n")
+        assert f'"id": {item_id}' in message
+    finally:
+        unsubscribe(q)
+
+
+def test_expiry_publishes_file_removed_event(client, app):
+    data = {
+        "name": "Tester",
+        "file": (io.BytesIO(b"hello world"), "expiring2.txt"),
+    }
+    client.post("/share/", data=data, content_type="multipart/form-data")
+
+    with app.app_context():
+        item = SharedItem.query.first()
+        item_id = item.id
+        item.uploaded_at = datetime.utcnow() - timedelta(
+            seconds=app.config["FILE_EXPIRY_SECONDS"] + 1
+        )
+        db.session.commit()
+
+    q = subscribe()
+    try:
+        delete_expired_items(app)
+
+        message = q.get(timeout=1)
+        assert message.startswith("event: file-removed\n")
+        assert f'"id": {item_id}' in message
+    finally:
+        unsubscribe(q)

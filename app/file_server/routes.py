@@ -1,7 +1,9 @@
 import os
+import queue
 import socket
 
 from flask import (
+    Response,
     current_app,
     flash,
     redirect,
@@ -12,6 +14,7 @@ from flask import (
 )
 
 from ..cleanup import delete_expired_items
+from ..events import publish, subscribe, unsubscribe
 from ..extensions import db
 from ..models import SharedItem
 from ..utils import get_unique_filename
@@ -50,6 +53,11 @@ def share():
         db.session.add(item)
         db.session.commit()
 
+        publish("file-added", {
+            "id": item.id,
+            "html": render_template("_file_card.html", item=item),
+        })
+
         return redirect(url_for("file_server.home"))
 
     return render_template("share.html")
@@ -66,6 +74,8 @@ def delete_file(pk):
     db.session.delete(item)
     db.session.commit()
 
+    publish("file-removed", {"id": pk})
+
     flash("File deleted successfully!", "success")
     return redirect(url_for("file_server.home"))
 
@@ -73,3 +83,24 @@ def delete_file(pk):
 @bp.route("/media/<path:filename>")
 def media(filename):
     return send_from_directory(current_app.config["MEDIA_ROOT"], filename)
+
+
+@bp.route("/events/stream")
+def event_stream():
+    def generate():
+        subscriber_queue = subscribe()
+        try:
+            while True:
+                try:
+                    message = subscriber_queue.get(timeout=15)
+                    yield message
+                except queue.Empty:
+                    yield ": keep-alive\n\n"
+        finally:
+            unsubscribe(subscriber_queue)
+
+    return Response(
+        generate(),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
