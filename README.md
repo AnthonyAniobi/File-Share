@@ -8,7 +8,7 @@ A lightweight, secure file sharing application designed to seamlessly transfer f
 
 FileShare is a simple yet powerful solution for sharing files between your devices without the hassle of physical storage media. Whether you need to transfer files between your laptop, desktop, phone, or tablet. It also allows sharing of files across different operating systems (eg: Macos, Windows, Android). FileShare makes it effortless—as long as they're connected to the same local network.
 
-Built with Django and vanilla JavaScript, FileShare provides a clean, minimalist interface that works on any device with a web browser.
+Built with Flask and vanilla JavaScript, FileShare provides a clean, minimalist interface that works on any device with a web browser.
 
 ## ✨ Key Features
 
@@ -116,6 +116,8 @@ For optimal security when using FileShare:
    On the device hosting the server, access fileshare on `http://0.0.0.0:8000`. On the homepage you would get your access url for all your other devices
    
    Example: `http://192.168.1.100:8000`
+
+   An admin panel is also available at `/admin/` for searching, editing uploader names, or deleting shared file records.
    
 
 ## 💡 Usage
@@ -146,8 +148,9 @@ Example: `http://192.168.1.100:8000`
 
 ### Built With
 
-- **Backend**: Django 5.2.8
-- **Database**: SQLite (included)
+- **Backend**: Flask 3.0
+- **Database**: SQLite via SQLAlchemy + Flask-Migrate (included)
+- **Admin Panel**: Flask-Admin
 - **Frontend**: Vanilla HTML, CSS, JavaScript
 - **Styling**: Custom CSS (no frameworks)
 - **Icons**: Inline SVG icons
@@ -156,21 +159,23 @@ Example: `http://192.168.1.100:8000`
 
 ```
 file_share/
-├── core/                   # Django project settings
-├── file_server/           # Main application
-│   ├── templates/         # HTML templates
-│   ├── models.py          # Database models
-│   ├── views.py           # Application logic
-│   └── urls.py            # URL routing
-├── static/                # Static assets
-│   ├── css/
-│   │   └── main.css       # All styles
-│   └── js/
-│       ├── main.js        # Drag-drop functionality
-│       └── icons.js       # SVG icon definitions
-├── media/                 # Uploaded files storage
-├── db.sqlite3            # Database file
-└── manage.py             # Django management script
+├── app/                        # Application package
+│   ├── file_server/            # Routes (home, share, delete, media)
+│   ├── templates/              # HTML templates
+│   ├── static/                 # Static assets
+│   │   ├── css/main.css        # All styles
+│   │   └── js/
+│   │       ├── main.js         # Drag-drop functionality
+│   │       └── icons.js        # SVG icon definitions
+│   ├── models.py                # Database models
+│   ├── admin.py                 # Flask-Admin configuration
+│   ├── config.py                # Environment configuration
+│   └── extensions.py            # Flask extension instances
+├── migrations/                  # Database migrations (Flask-Migrate/Alembic)
+├── media/                       # Uploaded files storage
+├── tests/                       # Test suite (pytest)
+├── db.sqlite3                   # Database file
+└── wsgi.py                      # Application entry point
 ```
 
 ### Features Overview
@@ -186,15 +191,15 @@ file_share/
 
 ### Changing the Port
 
-By default, FileShare runs on port 8000. To use a different port:
+By default, FileShare runs on port 8000. To use a different port, edit the port passed to `app.run()` in [wsgi.py](wsgi.py), or run it directly with Flask's CLI:
 
 ```bash
-python manage.py runserver 0.0.0.0:PORT_NUMBER
+flask run --host 0.0.0.0 --port PORT_NUMBER
 ```
 
 Example:
 ```bash
-python manage.py runserver 0.0.0.0:3000
+flask run --host 0.0.0.0 --port 3000
 ```
 
 ## 📋 Use Cases
@@ -249,7 +254,7 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ## 🙏 Acknowledgments
 
-- Built with Django web framework
+- Built with Flask web framework
 - Icons from Heroicons (embedded as SVG)
 - Inspired by the need for simple, secure local file sharing
 
@@ -271,7 +276,7 @@ This project is open source and available under the [MIT License](LICENSE).
 ### Server Won't Start
 
 - Ensure port 8000 is not already in use
-- Check that Python and Django are properly installed
+- Check that Python and Flask are properly installed
 - Verify virtual environment is activated
 
 ---

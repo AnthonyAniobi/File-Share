@@ -1,1 +1,6 @@
-./manage.py runserver 0.0.0.0:8000
+#!/usr/bin/env bash
+set -e
+
+export FLASK_APP=wsgi.py
+
+python wsgi.py

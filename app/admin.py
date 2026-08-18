@@ -1,6 +1,7 @@
+from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 
-from .extensions import admin, db
+from .extensions import db
 from .models import SharedItem
 
 
@@ -15,5 +16,5 @@ class SharedItemAdmin(ModelView):
 
 
 def init_admin(app):
-    admin.init_app(app)
+    admin = Admin(app, name="File Share Admin", template_mode="bootstrap4")
     admin.add_view(SharedItemAdmin(SharedItem, db.session, name="Shared Items"))
