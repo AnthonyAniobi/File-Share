@@ -18,7 +18,7 @@
             </svg>
             Copy
         </button>
-        <form method="POST" action="{{ url_for('file_server.clipboard_delete', pk=entry.id) }}" style="display: inline;" onsubmit="return confirm('Remove this text from the clipboard?');">
+        <form method="POST" action="{{ url_for('file_server.clipboard_delete', pk=entry.id) }}" class="file-action-form" onsubmit="return confirm('Remove this text from the clipboard?');">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="file-delete">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon">
