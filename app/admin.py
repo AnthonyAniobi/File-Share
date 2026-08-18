@@ -2,7 +2,7 @@ from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 
 from .extensions import db
-from .models import SharedItem
+from .models import ClipboardEntry, SharedItem
 
 
 class SharedItemAdmin(ModelView):
@@ -15,6 +15,14 @@ class SharedItemAdmin(ModelView):
     can_create = False
 
 
+class ClipboardEntryAdmin(ModelView):
+    column_list = ("id", "content", "shared_by", "created_at")
+    column_searchable_list = ("shared_by", "content")
+    column_default_sort = ("created_at", True)
+    can_create = False
+
+
 def init_admin(app):
     admin = Admin(app, name="File Share Admin", template_mode="bootstrap4")
     admin.add_view(SharedItemAdmin(SharedItem, db.session, name="Shared Items"))
+    admin.add_view(ClipboardEntryAdmin(ClipboardEntry, db.session, name="Clipboard Entries"))

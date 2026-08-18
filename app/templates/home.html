@@ -5,9 +5,8 @@
 {% block content %}
 <!-- Page Header -->
 <div class="page-header">
-    <h1 class="page-title">Shared Files</h1>
-    <p class="page-subtitle">Browse and download files shared by the community</p>
-    <p class="page-subtitle">Files are removed automatically 5 minutes after upload — download promptly!</p>
+    <h1 class="page-title">FileShare</h1>
+    <p class="page-subtitle">Share files and text instantly with every device on this network.</p>
     {% if ip_address %}
     <div class="server-info">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon" style="display: inline-block; margin-right: 0.5rem;">
@@ -18,31 +17,77 @@
     {% endif %}
 </div>
 
-<!-- Files Grid -->
-<div class="files-grid" id="filesGrid" {% if not items %}style="display: none;"{% endif %}>
-    {% for item in items %}
-        {% include "_file_card.html" %}
-    {% endfor %}
-</div>
-
-<!-- Empty State -->
-<div class="card" id="emptyState" {% if items %}style="display: none;"{% endif %}>
-    <div class="empty-state">
-        <div class="empty-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-        </div>
-        <h2 class="empty-title">No files shared yet</h2>
-        <p class="empty-text">Be the first to share a file with the community!</p>
-        <a href="{{ url_for('file_server.share') }}" class="btn btn-primary btn-large">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-            Share Your First File
-        </a>
+<!-- Public Clipboard -->
+<section class="section">
+    <div class="section-header">
+        <h2 class="section-title">Public Clipboard</h2>
+        <p class="page-subtitle">Paste text below — everyone connected sees it instantly, and it disappears automatically after 5 minutes.</p>
     </div>
-</div>
+
+    <div class="card">
+        <form method="POST" action="{{ url_for('file_server.clipboard_add') }}" id="clipboardForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label for="clipName" class="form-label">Your Name</label>
+                <input type="text" name="name" id="clipName" class="form-input" placeholder="Enter your name">
+            </div>
+            <div class="form-group">
+                <label for="clipText" class="form-label">Text</label>
+                <textarea name="text" id="clipText" class="form-input" rows="4" placeholder="Paste or type text to share..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Share Text
+            </button>
+        </form>
+    </div>
+
+    <div class="clipboard-list" id="clipboardList" {% if not clips %}style="display: none;"{% endif %}>
+        {% for entry in clips %}
+            {% include "_clip_card.html" %}
+        {% endfor %}
+    </div>
+
+    <div class="card" id="clipboardEmptyState" {% if clips %}style="display: none;"{% endif %}>
+        <div class="empty-state">
+            <p class="empty-text">Nothing on the clipboard yet. Be the first to paste something!</p>
+        </div>
+    </div>
+</section>
+
+<!-- Shared Files -->
+<section class="section">
+    <div class="section-header">
+        <h2 class="section-title">Shared Files</h2>
+        <p class="page-subtitle">Files are removed automatically 5 minutes after upload — download promptly!</p>
+    </div>
+
+    <div class="files-grid" id="filesGrid" {% if not items %}style="display: none;"{% endif %}>
+        {% for item in items %}
+            {% include "_file_card.html" %}
+        {% endfor %}
+    </div>
+
+    <div class="card" id="emptyState" {% if items %}style="display: none;"{% endif %}>
+        <div class="empty-state">
+            <div class="empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </div>
+            <h2 class="empty-title">No files shared yet</h2>
+            <p class="empty-text">Be the first to share a file with the community!</p>
+            <a href="{{ url_for('file_server.share') }}" class="btn btn-primary btn-large">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Share Your First File
+            </a>
+        </div>
+    </div>
+</section>
 {% endblock %}
 
 {% block extra_js %}

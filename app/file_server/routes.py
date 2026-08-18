@@ -16,7 +16,7 @@ from flask import (
 from ..cleanup import delete_expired_items
 from ..events import publish, subscribe, unsubscribe
 from ..extensions import db
-from ..models import SharedItem
+from ..models import ClipboardEntry, SharedItem
 from ..utils import get_unique_filename
 from . import bp
 
@@ -26,11 +26,12 @@ def home():
     delete_expired_items(current_app._get_current_object())
 
     items = SharedItem.query.order_by(SharedItem.uploaded_at.desc()).all()
+    clips = ClipboardEntry.query.order_by(ClipboardEntry.created_at.desc()).all()
 
     hostname = socket.gethostname()
     ip_address = socket.gethostbyname(hostname)
 
-    return render_template("home.html", items=items, ip_address=ip_address)
+    return render_template("home.html", items=items, clips=clips, ip_address=ip_address)
 
 
 @bp.route("/share/", methods=["GET", "POST"])
@@ -77,6 +78,40 @@ def delete_file(pk):
     publish("file-removed", {"id": pk})
 
     flash("File deleted successfully!", "success")
+    return redirect(url_for("file_server.home"))
+
+
+@bp.route("/clipboard/", methods=["POST"])
+def clipboard_add():
+    text = (request.form.get("text") or "").strip()
+    if not text:
+        flash("Please enter some text to share.", "error")
+        return redirect(url_for("file_server.home"))
+
+    shared_by = request.form.get("name") or "Unknown"
+
+    entry = ClipboardEntry(content=text, shared_by=shared_by)
+    db.session.add(entry)
+    db.session.commit()
+
+    publish("clip-added", {
+        "id": entry.id,
+        "html": render_template("_clip_card.html", entry=entry),
+    })
+
+    return redirect(url_for("file_server.home"))
+
+
+@bp.route("/clipboard/<int:pk>/delete/", methods=["POST"])
+def clipboard_delete(pk):
+    entry = db.get_or_404(ClipboardEntry, pk)
+
+    db.session.delete(entry)
+    db.session.commit()
+
+    publish("clip-removed", {"id": pk})
+
+    flash("Text removed.", "success")
     return redirect(url_for("file_server.home"))
 
 

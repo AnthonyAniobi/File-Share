@@ -19,3 +19,15 @@ class SharedItem(db.Model):
 
     def __repr__(self):
         return f"<SharedItem {self.filename!r}>"
+
+
+class ClipboardEntry(db.Model):
+    __tablename__ = "clipboard_entries"
+
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    shared_by = db.Column(db.String(100), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    def __repr__(self):
+        return f"<ClipboardEntry {self.id}>"

@@ -5,29 +5,49 @@ from datetime import datetime, timedelta
 
 from .events import publish
 from .extensions import db
-from .models import SharedItem
+from .models import ClipboardEntry, SharedItem
 
 logger = logging.getLogger(__name__)
 
 
-def delete_expired_items(app):
-    """Delete SharedItem rows (and their files on disk) past FILE_EXPIRY_SECONDS."""
+def _delete_expired_files(app):
     cutoff = datetime.utcnow() - timedelta(seconds=app.config["FILE_EXPIRY_SECONDS"])
 
-    with app.app_context():
-        expired = SharedItem.query.filter(SharedItem.uploaded_at < cutoff).all()
-        expired_ids = [item.id for item in expired]
-        for item in expired:
-            file_full_path = app.config["MEDIA_ROOT"] / item.file_path
-            if file_full_path.is_file():
-                file_full_path.unlink()
-            db.session.delete(item)
+    expired = SharedItem.query.filter(SharedItem.uploaded_at < cutoff).all()
+    expired_ids = [item.id for item in expired]
+    for item in expired:
+        file_full_path = app.config["MEDIA_ROOT"] / item.file_path
+        if file_full_path.is_file():
+            file_full_path.unlink()
+        db.session.delete(item)
 
-        if expired:
-            db.session.commit()
-            for item_id in expired_ids:
-                publish("file-removed", {"id": item_id})
-            logger.info("Cleaned up %d expired shared file(s)", len(expired))
+    if expired:
+        db.session.commit()
+        for item_id in expired_ids:
+            publish("file-removed", {"id": item_id})
+        logger.info("Cleaned up %d expired shared file(s)", len(expired))
+
+
+def _delete_expired_clipboard_entries(app):
+    cutoff = datetime.utcnow() - timedelta(seconds=app.config["CLIPBOARD_EXPIRY_SECONDS"])
+
+    expired = ClipboardEntry.query.filter(ClipboardEntry.created_at < cutoff).all()
+    expired_ids = [entry.id for entry in expired]
+    for entry in expired:
+        db.session.delete(entry)
+
+    if expired:
+        db.session.commit()
+        for entry_id in expired_ids:
+            publish("clip-removed", {"id": entry_id})
+        logger.info("Cleaned up %d expired clipboard entr%s", len(expired), "y" if len(expired) == 1 else "ies")
+
+
+def delete_expired_items(app):
+    """Delete SharedItem rows/files and ClipboardEntry rows past their expiry windows."""
+    with app.app_context():
+        _delete_expired_files(app)
+        _delete_expired_clipboard_entries(app)
 
 
 def start_cleanup_thread(app):

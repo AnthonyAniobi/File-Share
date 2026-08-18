@@ -13,6 +13,8 @@ Built with Flask and vanilla JavaScript, FileShare provides a clean, minimalist 
 ## ✨ Key Features
 
 - 🚀 **Fast Local Transfer** - Share files instantly across devices on your network
+- 📋 **Public Clipboard** - Paste text and have it appear live on every connected device, ready to copy
+- ⚡ **Live Updates** - Files and clipboard text appear and disappear on every screen instantly, no refresh needed
 - 🔒 **Local Network Only** - Files never leave your network, ensuring privacy
 - 📱 **Fully Responsive** - Works seamlessly on desktop, tablet, and mobile
 - 🎯 **Drag & Drop** - Intuitive file upload with drag-and-drop support
@@ -138,6 +140,15 @@ For optimal security when using FileShare:
 3. Click the **"Download"** button on any file
 4. The file will download to your device
 
+### Using the Public Clipboard
+
+1. Open FileShare on any device
+2. Type or paste text into the **Public Clipboard** box on the home page
+3. Click **"Share Text"**
+4. The text instantly appears on every other connected device — no refresh needed
+5. Anyone can click **"Copy"** to copy it to their own clipboard
+6. Pasted text is automatically removed 5 minutes after it's shared
+
 ### Finding Your Server Address
 
 When you start the server, FileShare automatically displays your local network IP address at the top of the home page. Share this address with your other devices to access FileShare.
@@ -228,6 +239,9 @@ A: Yes. Files are automatically deleted 5 minutes after upload (configurable via
 
 **Q: Can multiple people upload at the same time?**  
 A: Yes! FileShare supports multiple simultaneous uploads.
+
+**Q: How long does clipboard text stick around?**  
+A: 5 minutes after it's pasted (configurable via the `CLIPBOARD_EXPIRY_SECONDS` environment variable), or until someone deletes it manually.
 
 **Q: Do I need an internet connection?**  
 A: No! FileShare works entirely on your local network without internet access.

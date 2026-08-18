@@ -22,6 +22,7 @@ class Config:
     # Shared files (and their DB rows) are removed this long after upload,
     # so the server doesn't accumulate files/rows over time.
     FILE_EXPIRY_SECONDS = int(os.environ.get("FILE_EXPIRY_SECONDS", 300))
+    CLIPBOARD_EXPIRY_SECONDS = int(os.environ.get("CLIPBOARD_EXPIRY_SECONDS", 300))
     CLEANUP_INTERVAL_SECONDS = int(os.environ.get("CLEANUP_INTERVAL_SECONDS", 30))
 
 
