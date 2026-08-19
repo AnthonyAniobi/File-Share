@@ -1,16 +1,103 @@
 /**
- * FileShare - Realtime Updates
+ * FileShare - Realtime Updates & Live Expiry Countdowns
  * Keeps the shared files list and public clipboard in sync across devices
- * via Server-Sent Events, without requiring a page refresh.
+ * via Server-Sent Events, and runs live countdown timers that count down
+ * to zero every second until items are deleted.
  */
 
 (function () {
     'use strict';
 
+    var serverTimeOffset = 0;
+    var serverTimeMeta = document.querySelector('meta[name="server-time"]');
+    if (serverTimeMeta && serverTimeMeta.content) {
+        var parsedServerTime = new Date(serverTimeMeta.content).getTime();
+        if (!isNaN(parsedServerTime)) {
+            serverTimeOffset = parsedServerTime - Date.now();
+        }
+    }
+
+    function getNow() {
+        return Date.now() + serverTimeOffset;
+    }
+
     function syncVisibility(list, emptyState) {
+        if (!list || !emptyState) return;
         var hasItems = list.children.length > 0;
         list.style.display = hasItems ? '' : 'none';
         emptyState.style.display = hasItems ? 'none' : '';
+    }
+
+    function formatRemaining(totalSeconds) {
+        if (totalSeconds <= 0) {
+            return 'Expiring...';
+        }
+        var hours = Math.floor(totalSeconds / 3600);
+        var minutes = Math.floor((totalSeconds % 3600) / 60);
+        var seconds = totalSeconds % 60;
+
+        if (hours > 0) {
+            return hours + 'h ' + minutes + 'm ' + (seconds < 10 ? '0' : '') + seconds + 's';
+        }
+        if (minutes > 0) {
+            return minutes + 'm ' + (seconds < 10 ? '0' : '') + seconds + 's';
+        }
+        return seconds + 's';
+    }
+
+    function updateCountdowns() {
+        var cards = document.querySelectorAll('.file-card[data-created-at], .clip-card[data-created-at]');
+        var now = getNow();
+
+        cards.forEach(function (card) {
+            var createdAtStr = card.getAttribute('data-created-at');
+            var expirySec = parseInt(card.getAttribute('data-expiry-seconds'), 10) || 300;
+            if (!createdAtStr) return;
+
+            var createdAt = new Date(createdAtStr).getTime();
+            if (isNaN(createdAt)) return;
+
+            var expiresAt = createdAt + expirySec * 1000;
+            var remainingSeconds = Math.max(0, Math.floor((expiresAt - now) / 1000));
+
+            var display = card.querySelector('.countdown-display');
+            var badge = card.querySelector('.file-countdown, .clip-countdown');
+
+            if (display) {
+                display.textContent = formatRemaining(remainingSeconds);
+            }
+
+            if (badge) {
+                if (remainingSeconds <= 0) {
+                    badge.classList.remove('countdown-warning', 'countdown-urgent');
+                    badge.classList.add('countdown-expired');
+                } else if (remainingSeconds <= 15) {
+                    badge.classList.remove('countdown-warning');
+                    badge.classList.add('countdown-urgent');
+                } else if (remainingSeconds <= 60) {
+                    badge.classList.remove('countdown-urgent');
+                    badge.classList.add('countdown-warning');
+                } else {
+                    badge.classList.remove('countdown-warning', 'countdown-urgent', 'countdown-expired');
+                }
+            }
+
+            if (remainingSeconds <= 0 && !card.dataset.expiring) {
+                card.dataset.expiring = 'true';
+                card.classList.add('card-expiring');
+                setTimeout(function () {
+                    var parent = card.parentElement;
+                    card.remove();
+                    if (parent) {
+                        if (parent.id === 'filesGrid') {
+                            syncVisibility(parent, document.getElementById('emptyState'));
+                        } else if (parent.id === 'clipboardList') {
+                            syncVisibility(parent, document.getElementById('clipboardEmptyState'));
+                        }
+                    }
+                }, 600);
+            }
+        });
     }
 
     // Cards are rendered server-side using the *submitter's* session, so any
@@ -38,7 +125,9 @@
                 return;
             }
             grid.insertAdjacentHTML('afterbegin', payload.html);
-            rebindCsrfToken(document.getElementById('file-card-' + payload.id));
+            var newCard = document.getElementById('file-card-' + payload.id);
+            rebindCsrfToken(newCard);
+            updateCountdowns();
             syncVisibility(grid, emptyState);
         });
 
@@ -65,7 +154,9 @@
                 return;
             }
             list.insertAdjacentHTML('afterbegin', payload.html);
-            rebindCsrfToken(document.getElementById('clip-card-' + payload.id));
+            var newCard = document.getElementById('clip-card-' + payload.id);
+            rebindCsrfToken(newCard);
+            updateCountdowns();
             syncVisibility(list, emptyState);
         });
 
@@ -129,6 +220,9 @@
     }
 
     function initRealtimeUpdates() {
+        updateCountdowns();
+        setInterval(updateCountdowns, 1000);
+
         if (typeof EventSource === 'undefined') {
             return;
         }

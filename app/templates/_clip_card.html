@@ -1,4 +1,4 @@
-<div class="clip-card" id="clip-card-{{ entry.id }}">
+<div class="clip-card" id="clip-card-{{ entry.id }}" data-created-at="{{ entry.created_at.strftime('%Y-%m-%dT%H:%M:%SZ') }}" data-expiry-seconds="{{ config.CLIPBOARD_EXPIRY_SECONDS }}">
     <div class="clip-meta">
         <span class="clip-author">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon" style="display: inline-block; vertical-align: middle; margin-right: 0.25rem;">
@@ -6,7 +6,12 @@
             </svg>
             {{ entry.shared_by|default('Anonymous', true) }}
         </span>
-        <span class="clip-time">{{ entry.created_at.strftime('%H:%M:%S') }}</span>
+        <span class="clip-time clip-countdown">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon" style="display: inline-block; vertical-align: middle; margin-right: 0.25rem;">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="countdown-display" aria-label="Time remaining">--:--</span>
+        </span>
     </div>
 
     <pre class="clip-content">{{ entry.content }}</pre>

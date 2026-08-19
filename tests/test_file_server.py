@@ -181,3 +181,19 @@ def test_expiry_publishes_file_removed_event(client, app):
         assert f'"id": {item_id}' in message
     finally:
         unsubscribe(q)
+
+
+def test_file_card_renders_countdown_attributes(client, app):
+    data = {
+        "name": "Tester",
+        "file": (io.BytesIO(b"hello world"), "countdown_test.txt"),
+    }
+    response = client.post(
+        "/share/", data=data, content_type="multipart/form-data", follow_redirects=True
+    )
+    assert response.status_code == 200
+    assert b'name="server-time"' in response.data
+    assert b'data-created-at=' in response.data
+    assert b'data-expiry-seconds=' in response.data
+    assert b'class="countdown-display"' in response.data
+

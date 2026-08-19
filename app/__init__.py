@@ -23,6 +23,11 @@ def create_app(config_name=None):
 
     app.register_blueprint(file_server_bp)
 
+    @app.context_processor
+    def inject_server_time():
+        from datetime import datetime
+        return {"server_time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")}
+
     # Skip during tests, and skip the debug reloader's parent process so the
     # cleanup timer only ever runs once per real server process.
     if not app.config.get("TESTING") and (

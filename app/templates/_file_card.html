@@ -1,4 +1,4 @@
-<div class="file-card" id="file-card-{{ item.id }}">
+<div class="file-card" id="file-card-{{ item.id }}" data-created-at="{{ item.uploaded_at.strftime('%Y-%m-%dT%H:%M:%SZ') }}" data-expiry-seconds="{{ config.FILE_EXPIRY_SECONDS }}">
     <div class="file-icon">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -14,11 +14,11 @@
         {{ item.shared_by|default('Anonymous', true) }}
     </div>
 
-    <div class="file-meta">
+    <div class="file-meta file-countdown">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon" style="display: inline-block; vertical-align: middle; margin-right: 0.25rem;">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        {{ item.uploaded_at.strftime('%b %d, %Y') }}
+        <span class="countdown-display" aria-label="Time remaining">--:--</span>
     </div>
 
     <div class="file-actions">

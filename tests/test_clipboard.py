@@ -135,3 +135,17 @@ def test_expiry_publishes_clip_removed_event(client, app):
         assert f'"id": {entry_id}' in message
     finally:
         unsubscribe(q)
+
+
+def test_clip_card_renders_countdown_attributes(client, app):
+    response = client.post(
+        "/clipboard/",
+        data={"name": "Tester", "text": "countdown clip text"},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert b'name="server-time"' in response.data
+    assert b'data-created-at=' in response.data
+    assert b'data-expiry-seconds=' in response.data
+    assert b'class="countdown-display"' in response.data
+
