@@ -14,18 +14,7 @@
     <div class="card">
         <form method="POST" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-            <!-- Name Input -->
-            <div class="form-group">
-                <label for="name" class="form-label">Your Name</label>
-                <input
-                    type="text"
-                    name="name"
-                    id="name"
-                    class="form-input"
-                    placeholder="Enter your name"
-                >
-            </div>
+            <input type="hidden" name="name" class="js-sender-name">
 
             <!-- Drag and Drop Zone -->
             <div class="form-group">

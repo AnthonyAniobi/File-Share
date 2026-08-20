@@ -8,6 +8,222 @@
 (function () {
     'use strict';
 
+    var STORAGE_KEYS = {
+        visitorId: 'fileshare_visitor_id',
+        displayName: 'fileshare_display_name',
+    };
+
+    // sessionStorage is per-tab and cleared when the tab closes, which is
+    // exactly the lifetime we want for the visitor id / display name. Guard
+    // access in case it's unavailable (private-mode edge cases) and fall
+    // back to an in-memory value for the life of the page.
+    var memoryFallback = {};
+
+    function storageGet(key) {
+        try {
+            return sessionStorage.getItem(key);
+        } catch (err) {
+            return memoryFallback[key] || null;
+        }
+    }
+
+    function storageSet(key, value) {
+        try {
+            sessionStorage.setItem(key, value);
+        } catch (err) {
+            memoryFallback[key] = value;
+        }
+    }
+
+    function getVisitorId() {
+        var id = storageGet(STORAGE_KEYS.visitorId);
+        if (!id) {
+            id = (window.crypto && crypto.randomUUID)
+                ? crypto.randomUUID()
+                : ('visitor-' + Date.now().toString(16) + '-' + Math.random().toString(16).slice(2));
+            storageSet(STORAGE_KEYS.visitorId, id);
+        }
+        return id;
+    }
+
+    function getDisplayName() {
+        return storageGet(STORAGE_KEYS.displayName) || '';
+    }
+
+    function setDisplayName(name) {
+        storageSet(STORAGE_KEYS.displayName, name);
+        document.querySelectorAll('.js-sender-name').forEach(function (input) {
+            input.value = name;
+        });
+    }
+
+    function syncNameToServer(name) {
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        fetch('/profile/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': meta ? meta.content : '',
+            },
+            body: JSON.stringify({ visitor_id: getVisitorId(), name: name }),
+        }).catch(function () {
+            // Best-effort: the presence sidebar just won't show the new
+            // name until the next successful sync or reconnect.
+        });
+    }
+
+    function initSenderNameFields() {
+        setDisplayName(getDisplayName());
+    }
+
+    function initProfileBar() {
+        var input = document.getElementById('displayNameInput');
+        var hint = document.getElementById('profileSavedHint');
+        if (!input) return;
+
+        input.value = getDisplayName();
+
+        var debounceTimer = null;
+        var hintTimer = null;
+
+        function showSavedHint() {
+            if (!hint) return;
+            hint.classList.add('visible');
+            clearTimeout(hintTimer);
+            hintTimer = setTimeout(function () {
+                hint.classList.remove('visible');
+            }, 1500);
+        }
+
+        function commit() {
+            var name = input.value.trim();
+            setDisplayName(name);
+            syncNameToServer(name);
+            showSavedHint();
+        }
+
+        input.addEventListener('input', function () {
+            // Local-only updates (sessionStorage + hidden form fields) happen
+            // on every keystroke; the network call to rename the presence
+            // entry is debounced so we don't spam the server while typing.
+            setDisplayName(input.value.trim());
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(commit, 500);
+        });
+
+        input.addEventListener('blur', function () {
+            clearTimeout(debounceTimer);
+            commit();
+        });
+
+        input.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                clearTimeout(debounceTimer);
+                commit();
+                input.blur();
+            }
+        });
+    }
+
+    function initPresenceSidebar(source) {
+        var list = document.getElementById('onlineList');
+        var countEl = document.getElementById('onlineCount');
+        var toggle = document.getElementById('onlineToggle');
+        var sidebar = document.getElementById('onlineSidebar');
+        var overlay = document.getElementById('onlineOverlay');
+        var closeBtn = document.getElementById('onlineClose');
+        if (!list || !countEl) return;
+
+        var selfId = getVisitorId();
+
+        function labelFor(visitor) {
+            return visitor.id === selfId ? visitor.name + ' (You)' : visitor.name;
+        }
+
+        function renderItem(visitor) {
+            var li = document.createElement('li');
+            li.className = 'online-item' + (visitor.id === selfId ? ' online-item-self' : '');
+            li.setAttribute('data-visitor-id', visitor.id);
+            var dot = document.createElement('span');
+            dot.className = 'online-dot';
+            var name = document.createElement('span');
+            name.className = 'online-name';
+            name.textContent = labelFor(visitor);
+            li.appendChild(dot);
+            li.appendChild(name);
+            return li;
+        }
+
+        function updateCount() {
+            countEl.textContent = list.children.length;
+        }
+
+        function upsert(visitor) {
+            var existing = list.querySelector('[data-visitor-id="' + visitor.id + '"]');
+            if (existing) {
+                existing.querySelector('.online-name').textContent = labelFor(visitor);
+            } else {
+                list.appendChild(renderItem(visitor));
+            }
+            updateCount();
+        }
+
+        function removeById(id) {
+            var existing = list.querySelector('[data-visitor-id="' + id + '"]');
+            if (existing) {
+                existing.remove();
+            }
+            updateCount();
+        }
+
+        source.addEventListener('presence-sync', function (event) {
+            var visitors = JSON.parse(event.data);
+            list.innerHTML = '';
+            visitors.forEach(upsert);
+            updateCount();
+        });
+
+        source.addEventListener('presence-added', function (event) {
+            upsert(JSON.parse(event.data));
+        });
+
+        source.addEventListener('presence-renamed', function (event) {
+            upsert(JSON.parse(event.data));
+        });
+
+        source.addEventListener('presence-removed', function (event) {
+            removeById(JSON.parse(event.data).id);
+        });
+
+        if (toggle && sidebar) {
+            function openSidebar() {
+                sidebar.classList.add('open');
+                sidebar.setAttribute('aria-hidden', 'false');
+                toggle.setAttribute('aria-expanded', 'true');
+                if (overlay) overlay.hidden = false;
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('open');
+                sidebar.setAttribute('aria-hidden', 'true');
+                toggle.setAttribute('aria-expanded', 'false');
+                if (overlay) overlay.hidden = true;
+            }
+
+            toggle.addEventListener('click', function () {
+                if (sidebar.classList.contains('open')) {
+                    closeSidebar();
+                } else {
+                    openSidebar();
+                }
+            });
+
+            if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+            if (overlay) overlay.addEventListener('click', closeSidebar);
+        }
+    }
+
     var serverTimeOffset = 0;
     var serverTimeMeta = document.querySelector('meta[name="server-time"]');
     if (serverTimeMeta && serverTimeMeta.content) {
@@ -223,13 +439,19 @@
         updateCountdowns();
         setInterval(updateCountdowns, 1000);
 
+        initSenderNameFields();
+        initProfileBar();
+
         if (typeof EventSource === 'undefined') {
             return;
         }
 
-        var source = new EventSource('/events/stream');
+        var streamUrl = '/events/stream?visitor_id=' + encodeURIComponent(getVisitorId())
+            + '&name=' + encodeURIComponent(getDisplayName());
+        var source = new EventSource(streamUrl);
         initFileUpdates(source);
         initClipboardUpdates(source);
+        initPresenceSidebar(source);
         // EventSource reconnects automatically on drop/error; nothing to do here.
     }
 

@@ -27,10 +27,7 @@
     <div class="card">
         <form method="POST" action="{{ url_for('file_server.clipboard_add') }}" id="clipboardForm">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="form-group">
-                <label for="clipName" class="form-label">Your Name</label>
-                <input type="text" name="name" id="clipName" class="form-input" placeholder="Enter your name">
-            </div>
+            <input type="hidden" name="name" class="js-sender-name">
             <div class="form-group">
                 <label for="clipText" class="form-label">Text</label>
                 <textarea name="text" id="clipText" class="form-input" rows="4" placeholder="Paste or type text to share..." required></textarea>
@@ -88,8 +85,4 @@
         </div>
     </div>
 </section>
-{% endblock %}
-
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/realtime.js') }}"></script>
 {% endblock %}

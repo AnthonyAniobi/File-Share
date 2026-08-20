@@ -11,6 +11,18 @@ def test_home_page_shows_clipboard_empty_state(client):
     assert b"Nothing on the clipboard yet" in response.data
 
 
+def test_pasting_without_name_defaults_to_anonymous(client, app):
+    response = client.post(
+        "/clipboard/", data={"text": "no name given"}, follow_redirects=True
+    )
+    assert response.status_code == 200
+    assert b"Anonymous" in response.data
+
+    with app.app_context():
+        entry = ClipboardEntry.query.first()
+        assert entry.shared_by == "Anonymous"
+
+
 def test_pasting_text_lists_and_deletes_it(client, app):
     response = client.post(
         "/clipboard/",

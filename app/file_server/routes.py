@@ -14,9 +14,10 @@ from flask import (
 )
 
 from ..cleanup import delete_expired_items
-from ..events import publish, subscribe, unsubscribe
+from ..events import format_message, publish, subscribe, unsubscribe
 from ..extensions import db
 from ..models import ClipboardEntry, SharedItem
+from ..presence import add_visitor, list_visitors, remove_visitor, rename_visitor
 from ..utils import get_unique_filename
 from . import bp
 
@@ -42,7 +43,7 @@ def share():
             flash("Please choose a file to share.", "error")
             return redirect(url_for("file_server.share"))
 
-        shared_by = request.form.get("name") or "Unknown"
+        shared_by = (request.form.get("name") or "").strip() or "Anonymous"
 
         upload_dir = current_app.config["SHARED_UPLOAD_DIR"]
         upload_dir.mkdir(parents=True, exist_ok=True)
@@ -88,7 +89,7 @@ def clipboard_add():
         flash("Please enter some text to share.", "error")
         return redirect(url_for("file_server.home"))
 
-    shared_by = request.form.get("name") or "Unknown"
+    shared_by = (request.form.get("name") or "").strip() or "Anonymous"
 
     entry = ClipboardEntry(content=text, shared_by=shared_by)
     db.session.add(entry)
@@ -122,20 +123,50 @@ def media(filename):
 
 @bp.route("/events/stream")
 def event_stream():
+    visitor_id = (request.args.get("visitor_id") or "").strip()
+    initial_name = request.args.get("name") or ""
+
     def generate():
         subscriber_queue = subscribe()
+        if visitor_id:
+            # Send the current roster to this connection only *before*
+            # registering, so the caller doesn't see themselves twice
+            # (once in the sync snapshot, once via the broadcast below).
+            subscriber_queue.put(format_message("presence-sync", list_visitors()))
+            add_visitor(visitor_id, initial_name)
         try:
             while True:
                 try:
-                    message = subscriber_queue.get(timeout=15)
+                    # A closed tab is only detected when a write to its dead
+                    # socket fails, which happens on the *next* yield — so
+                    # this interval doubles as the "someone left" latency
+                    # for the presence sidebar. Kept short for that reason
+                    # (actual TCP failure detection can still take a couple
+                    # of attempts, so this is a lower bound, not a guarantee).
+                    message = subscriber_queue.get(timeout=2)
                     yield message
                 except queue.Empty:
                     yield ": keep-alive\n\n"
         finally:
             unsubscribe(subscriber_queue)
+            if visitor_id:
+                remove_visitor(visitor_id)
 
     return Response(
         generate(),
         mimetype="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@bp.route("/profile/", methods=["POST"])
+def update_profile():
+    payload = request.get_json(silent=True) or {}
+    visitor_id = (payload.get("visitor_id") or "").strip()
+    name = payload.get("name") or ""
+
+    if not visitor_id:
+        return {"error": "visitor_id is required"}, 400
+
+    rename_visitor(visitor_id, name)
+    return {"ok": True}

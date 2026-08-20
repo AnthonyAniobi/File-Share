@@ -30,6 +30,19 @@ def test_share_without_file_redirects_with_error(client):
     assert b"Please choose a file to share" in response.data
 
 
+def test_upload_without_name_defaults_to_anonymous(client, app):
+    data = {"file": (io.BytesIO(b"hello"), "anon.txt")}
+    response = client.post(
+        "/share/", data=data, content_type="multipart/form-data", follow_redirects=True
+    )
+    assert response.status_code == 200
+    assert b"Anonymous" in response.data
+
+    with app.app_context():
+        item = SharedItem.query.first()
+        assert item.shared_by == "Anonymous"
+
+
 def test_upload_lists_and_deletes_file(client, app):
     data = {
         "name": "Tester",

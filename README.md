@@ -36,6 +36,8 @@ Built with Flask and vanilla JavaScript, FileShare provides a clean, minimalist 
 
 - 🚀 **Fast Local Transfer** - Share files instantly across devices on your network
 - 📋 **Public Clipboard** - Paste text and have it appear live on every connected device, ready to copy
+- 🙋 **Optional Display Name** - Set a name once per browser tab and it's attached to everything you send; leave it blank and you're just "Anonymous"
+- 👀 **Who's Here** - A live sidebar shows everyone currently connected, named or anonymous, updating in real time
 - ⚡ **Live Updates** - Files and clipboard text appear and disappear on every screen instantly, no refresh needed
 - ⏱️ **Self-Cleaning** - Everything shared automatically disappears 5 minutes later, so nothing piles up
 - 🔒 **Local Network Only** - Files never leave your network, ensuring privacy
@@ -102,33 +104,39 @@ Built with Flask and vanilla JavaScript, FileShare provides a clean, minimalist 
 
 Once the server is running, open it on the hosting device. The blue pill near the top of the home page shows your server's local network address (e.g. `http://192.168.1.100:8000`) — that's what you'll type into every other device's browser to join in.
 
-### 2. Share a file
+### 2. (Optional) Set your display name
+
+At the top of every page there's a **Your name** field. Whatever you type there is attached to every file and clipboard entry you send from that browser tab — no need to re-enter it each time. Leave it blank and everything you send goes out as **Anonymous**. It's remembered only for as long as that browser tab stays open; close the tab and it's gone.
+
+### 3. See who's online
+
+Click the **online** tab on the right edge of the screen to open the "Who's here" sidebar — a live list of everyone currently connected, showing their display name (or "Anonymous"). It updates instantly as people join, rename themselves, or close their tab.
+
+### 4. Share a file
 
 1. Click **"Share File"** in the navigation
-2. Enter your name (optional)
-3. Drag and drop a file onto the upload area, or click to browse
-4. Click **"Share File Now"**
-5. Your file instantly appears in **Shared Files** on every connected device
+2. Drag and drop a file onto the upload area, or click to browse
+3. Click **"Share File Now"**
+4. Your file instantly appears in **Shared Files** on every connected device, credited to your display name (or "Anonymous")
 
-### 3. Download a file
+### 5. Download a file
 
 1. Open FileShare on any device on the network
 2. Find the file in the **Shared Files** grid
 3. Click **"Download"**
 
-### 4. Use the Public Clipboard
+### 6. Use the Public Clipboard
 
 1. On the home page, type or paste text into the **Public Clipboard** box
-2. Enter your name (optional)
-3. Click **"Share Text"**
-4. It appears instantly on every other connected device — no refresh needed
-5. Anyone can click **"Copy"** to copy it straight to their own clipboard
+2. Click **"Share Text"**
+3. It appears instantly on every other connected device — no refresh needed
+4. Anyone can click **"Copy"** to copy it straight to their own clipboard
 
-### 5. Clean up early (optional)
+### 7. Clean up early (optional)
 
 Click **"Delete"** on any file or clipboard entry to remove it immediately for everyone. If you don't, it's removed automatically anyway — see below.
 
-### 6. Let things clean themselves up
+### 8. Let things clean themselves up
 
 Every file and every clipboard entry is automatically deleted **5 minutes** after it's shared, so the server never accumulates old data. There's nothing to do — just re-share something if it's needed longer.
 
@@ -179,11 +187,12 @@ file_share/
 │   │   ├── css/main.css          # All styles (responsive by default)
 │   │   └── js/
 │   │       ├── main.js           # Drag-drop functionality
-│   │       ├── realtime.js       # Live updates + clipboard copy (Server-Sent Events)
+│   │       ├── realtime.js       # Live updates, profile, presence sidebar, clipboard copy (SSE)
 │   │       └── icons.js          # SVG icon definitions
 │   ├── models.py                 # Database models (files + clipboard entries)
 │   ├── cleanup.py                # Background job that expires old files/text
 │   ├── events.py                 # Pub/sub used to push live updates to browsers
+│   ├── presence.py               # In-memory "who's online" registry (not persisted)
 │   ├── admin.py                  # Flask-Admin configuration
 │   ├── config.py                 # Environment configuration
 │   └── extensions.py             # Flask extension instances
@@ -262,6 +271,12 @@ A: 5 minutes after it's pasted (configurable via the `CLIPBOARD_EXPIRY_SECONDS` 
 
 **Q: Do other devices need to refresh the page to see new files or text?**  
 A: No. The home page holds a live connection to the server, so new files, new clipboard text, deletions, and expirations all show up instantly on every open tab.
+
+**Q: Does my display name get saved anywhere?**  
+A: No. It only lives in that browser tab for as long as the tab is open — nothing is written to a database, and there's no account or login. Close the tab and it's gone; open a new one and you start as Anonymous again.
+
+**Q: Does the "who's online" list persist across server restarts?**  
+A: No. It only reflects who's actively connected right now, so restarting the server always starts with an empty list.
 
 **Q: Do I need an internet connection?**  
 A: No! FileShare works entirely on your local network without internet access.

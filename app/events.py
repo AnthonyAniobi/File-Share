@@ -25,8 +25,12 @@ def unsubscribe(q):
         _subscribers.discard(q)
 
 
+def format_message(event, data):
+    return f"event: {event}\ndata: {json.dumps(data)}\n\n"
+
+
 def publish(event, data):
-    message = f"event: {event}\ndata: {json.dumps(data)}\n\n"
+    message = format_message(event, data)
     with _lock:
         subscribers = list(_subscribers)
     for q in subscribers:
