@@ -25,10 +25,6 @@
                     </div>
                     FileShare
                 </a>
-                <div class="navbar-menu">
-                    <a href="{{ url_for('file_server.home') }}" class="navbar-link">All Files</a>
-                    <a href="{{ url_for('file_server.share') }}" class="btn btn-primary">Share File</a>
-                </div>
             </div>
         </div>
     </nav>
@@ -65,6 +61,53 @@
         </div>
         <ul id="onlineList" class="online-list"></ul>
     </aside>
+
+    <!-- Board Item Detail Modal -->
+    <div id="boardModalOverlay" class="board-modal-overlay" hidden>
+        <div id="boardModal" class="board-modal" role="dialog" aria-modal="true" aria-labelledby="boardModalTitle">
+            <div class="board-modal-header">
+                <div class="board-modal-heading">
+                    <h2 id="boardModalTitle" class="board-modal-title"></h2>
+                    <div class="board-modal-meta">
+                        <span id="boardModalSender"></span>
+                        <span>·</span>
+                        <span id="boardModalTime"></span>
+                        <span>·</span>
+                        <span id="boardModalCountdown" class="board-card-countdown">
+                            <span class="countdown-display">--:--</span>
+                        </span>
+                    </div>
+                </div>
+                <button type="button" id="boardModalClose" class="board-modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="board-modal-body">
+                <pre id="boardModalContent" class="board-modal-content" hidden></pre>
+            </div>
+            <div class="board-modal-actions">
+                <a id="boardModalDownload" href="#" download class="file-download" hidden>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download
+                </a>
+                <button type="button" id="boardModalCopy" class="btn btn-secondary" hidden>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <span id="boardModalCopyLabel">Copy</span>
+                </button>
+                <form id="boardModalDeleteForm" method="POST" action="">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="file-delete">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <!-- Flash Messages -->
     {% with flashed_messages = get_flashed_messages(with_categories=true) %}

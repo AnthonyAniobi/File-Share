@@ -6,11 +6,6 @@ from app.extensions import db
 from app.models import ClipboardEntry
 
 
-def test_home_page_shows_clipboard_empty_state(client):
-    response = client.get("/")
-    assert b"Nothing on the clipboard yet" in response.data
-
-
 def test_pasting_without_name_defaults_to_anonymous(client, app):
     response = client.post(
         "/clipboard/", data={"text": "no name given"}, follow_redirects=True

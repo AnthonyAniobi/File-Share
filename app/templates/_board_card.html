@@ -1,0 +1,47 @@
+{% set created_at = item.uploaded_at if kind == 'file' else item.created_at %}
+{% set expiry_seconds = config.FILE_EXPIRY_SECONDS if kind == 'file' else config.CLIPBOARD_EXPIRY_SECONDS %}
+{% set sender = item.shared_by|default('Anonymous', true) %}
+{% set preview = (item.content.split() | join(' ')) if kind == 'clip' else '' %}
+<button type="button"
+    class="board-card board-card-{{ kind }}"
+    id="board-item-{{ kind }}-{{ item.id }}"
+    data-kind="{{ kind }}"
+    data-id="{{ item.id }}"
+    data-created-at="{{ created_at.strftime('%Y-%m-%dT%H:%M:%SZ') }}"
+    data-expiry-seconds="{{ expiry_seconds }}"
+    data-sender="{{ sender }}"
+    data-delete-url="{{ url_for('file_server.delete_file', pk=item.id) if kind == 'file' else url_for('file_server.clipboard_delete', pk=item.id) }}"
+    {% if kind == 'file' %}
+    data-filename="{{ item.filename }}"
+    data-download-url="{{ url_for('file_server.media', filename=item.file_path) }}"
+    {% else %}
+    data-content="{{ item.content }}"
+    {% endif %}
+>
+    <span class="board-card-icon">
+        {% if kind == 'file' %}
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        {% else %}
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+        {% endif %}
+    </span>
+    <span class="board-card-body">
+        <span class="board-card-title">
+            {% if kind == 'file' %}{{ item.filename }}{% else %}{{ preview[:90] }}{% if preview|length > 90 %}…{% endif %}{% endif %}
+        </span>
+        <span class="board-card-sub">
+            <span class="board-card-sender">{{ sender }}</span>
+            <span class="board-card-dot">·</span>
+            <span class="board-card-countdown">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="icon">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="countdown-display" aria-label="Time remaining">--:--</span>
+            </span>
+        </span>
+    </span>
+</button>

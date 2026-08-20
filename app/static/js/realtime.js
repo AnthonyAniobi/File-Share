@@ -1,8 +1,8 @@
 /**
  * FileShare - Realtime Updates & Live Expiry Countdowns
- * Keeps the shared files list and public clipboard in sync across devices
- * via Server-Sent Events, and runs live countdown timers that count down
- * to zero every second until items are deleted.
+ * Keeps the unified board (files + shared text) in sync across devices via
+ * Server-Sent Events, drives the click-to-expand detail modal, and runs
+ * live countdown timers that count down to zero until items are deleted.
  */
 
 (function () {
@@ -242,6 +242,20 @@
         var hasItems = list.children.length > 0;
         list.style.display = hasItems ? '' : 'none';
         emptyState.style.display = hasItems ? 'none' : '';
+        var countEl = document.getElementById('boardCount');
+        if (countEl) countEl.textContent = list.children.length;
+    }
+
+    function formatFullTime(iso) {
+        var date = new Date(iso);
+        if (isNaN(date.getTime())) return '';
+        try {
+            return date.toLocaleString(undefined, {
+                month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+            });
+        } catch (err) {
+            return date.toString();
+        }
     }
 
     function formatRemaining(totalSeconds) {
@@ -261,151 +275,215 @@
         return seconds + 's';
     }
 
+    function applyCountdown(createdAtStr, expirySec, display, badge) {
+        if (!createdAtStr) return null;
+        var createdAt = new Date(createdAtStr).getTime();
+        if (isNaN(createdAt)) return null;
+
+        var expiresAt = createdAt + (expirySec || 300) * 1000;
+        var remainingSeconds = Math.max(0, Math.floor((expiresAt - getNow()) / 1000));
+
+        if (display) {
+            display.textContent = formatRemaining(remainingSeconds);
+        }
+
+        if (badge) {
+            if (remainingSeconds <= 0) {
+                badge.classList.remove('countdown-warning', 'countdown-urgent');
+                badge.classList.add('countdown-expired');
+            } else if (remainingSeconds <= 15) {
+                badge.classList.remove('countdown-warning');
+                badge.classList.add('countdown-urgent');
+            } else if (remainingSeconds <= 60) {
+                badge.classList.remove('countdown-urgent');
+                badge.classList.add('countdown-warning');
+            } else {
+                badge.classList.remove('countdown-warning', 'countdown-urgent', 'countdown-expired');
+            }
+        }
+
+        return remainingSeconds;
+    }
+
     function updateCountdowns() {
-        var cards = document.querySelectorAll('.file-card[data-created-at], .clip-card[data-created-at]');
-        var now = getNow();
+        var board = document.getElementById('board');
+        var boardEmptyState = document.getElementById('boardEmptyState');
+        var cards = document.querySelectorAll('.board-card[data-created-at]');
 
         cards.forEach(function (card) {
-            var createdAtStr = card.getAttribute('data-created-at');
-            var expirySec = parseInt(card.getAttribute('data-expiry-seconds'), 10) || 300;
-            if (!createdAtStr) return;
-
-            var createdAt = new Date(createdAtStr).getTime();
-            if (isNaN(createdAt)) return;
-
-            var expiresAt = createdAt + expirySec * 1000;
-            var remainingSeconds = Math.max(0, Math.floor((expiresAt - now) / 1000));
-
-            var display = card.querySelector('.countdown-display');
-            var badge = card.querySelector('.file-countdown, .clip-countdown');
-
-            if (display) {
-                display.textContent = formatRemaining(remainingSeconds);
-            }
-
-            if (badge) {
-                if (remainingSeconds <= 0) {
-                    badge.classList.remove('countdown-warning', 'countdown-urgent');
-                    badge.classList.add('countdown-expired');
-                } else if (remainingSeconds <= 15) {
-                    badge.classList.remove('countdown-warning');
-                    badge.classList.add('countdown-urgent');
-                } else if (remainingSeconds <= 60) {
-                    badge.classList.remove('countdown-urgent');
-                    badge.classList.add('countdown-warning');
-                } else {
-                    badge.classList.remove('countdown-warning', 'countdown-urgent', 'countdown-expired');
-                }
-            }
+            var remainingSeconds = applyCountdown(
+                card.getAttribute('data-created-at'),
+                parseInt(card.getAttribute('data-expiry-seconds'), 10),
+                card.querySelector('.countdown-display'),
+                card.querySelector('.board-card-countdown')
+            );
+            if (remainingSeconds === null) return;
 
             if (remainingSeconds <= 0 && !card.dataset.expiring) {
                 card.dataset.expiring = 'true';
                 card.classList.add('card-expiring');
                 setTimeout(function () {
-                    var parent = card.parentElement;
                     card.remove();
-                    if (parent) {
-                        if (parent.id === 'filesGrid') {
-                            syncVisibility(parent, document.getElementById('emptyState'));
-                        } else if (parent.id === 'clipboardList') {
-                            syncVisibility(parent, document.getElementById('clipboardEmptyState'));
-                        }
-                    }
+                    syncVisibility(board, boardEmptyState);
                 }, 600);
             }
         });
+
+        // Keep an open detail modal's countdown ticking too.
+        var modalOverlay = document.getElementById('boardModalOverlay');
+        if (modalOverlay && !modalOverlay.hidden) {
+            applyCountdown(
+                modalOverlay.dataset.createdAt,
+                parseInt(modalOverlay.dataset.expirySeconds, 10),
+                document.querySelector('#boardModalCountdown .countdown-display'),
+                document.getElementById('boardModalCountdown')
+            );
+        }
     }
 
-    // Cards are rendered server-side using the *submitter's* session, so any
-    // embedded CSRF token only matches their session. Swap it for this
-    // browser's own token (published in the page's <meta> tag) so actions
-    // like Delete work for every viewer, not just the one who submitted.
-    function rebindCsrfToken(card) {
-        var csrfInput = card && card.querySelector('input[name="csrf_token"]');
+    function initBoardUpdates(source) {
+        var board = document.getElementById('board');
+        var emptyState = document.getElementById('boardEmptyState');
+        if (!board || !emptyState) {
+            return;
+        }
+
+        function handleAdded(kind) {
+            return function (event) {
+                var payload = JSON.parse(event.data);
+                if (document.getElementById('board-item-' + kind + '-' + payload.id)) {
+                    return;
+                }
+                board.insertAdjacentHTML('afterbegin', payload.html);
+                updateCountdowns();
+                syncVisibility(board, emptyState);
+            };
+        }
+
+        function handleRemoved(kind) {
+            return function (event) {
+                var payload = JSON.parse(event.data);
+                var card = document.getElementById('board-item-' + kind + '-' + payload.id);
+                if (card) {
+                    card.remove();
+                }
+                closeModalIfShowing(kind, payload.id);
+                syncVisibility(board, emptyState);
+            };
+        }
+
+        source.addEventListener('file-added', handleAdded('file'));
+        source.addEventListener('file-removed', handleRemoved('file'));
+        source.addEventListener('clip-added', handleAdded('clip'));
+        source.addEventListener('clip-removed', handleRemoved('clip'));
+
+        // Clicking anywhere on a card (except its own removal, handled
+        // above) opens the shared detail modal.
+        board.addEventListener('click', function (event) {
+            var card = event.target.closest('.board-card');
+            if (card) {
+                openBoardModal(card);
+            }
+        });
+
+        syncVisibility(board, emptyState);
+    }
+
+    function closeModalIfShowing(kind, id) {
+        var overlay = document.getElementById('boardModalOverlay');
+        if (overlay && !overlay.hidden && overlay.dataset.kind === kind && overlay.dataset.id === String(id)) {
+            closeBoardModal();
+        }
+    }
+
+    function openBoardModal(card) {
+        var overlay = document.getElementById('boardModalOverlay');
+        if (!overlay) return;
+
+        var kind = card.dataset.kind;
+        var isFile = kind === 'file';
+
+        overlay.dataset.kind = kind;
+        overlay.dataset.id = card.dataset.id;
+        overlay.dataset.createdAt = card.dataset.createdAt;
+        overlay.dataset.expirySeconds = card.dataset.expirySeconds;
+
+        document.getElementById('boardModalTitle').textContent = isFile ? card.dataset.filename : 'Shared text';
+        document.getElementById('boardModalSender').textContent = card.dataset.sender;
+        document.getElementById('boardModalTime').textContent = formatFullTime(card.dataset.createdAt);
+
+        var contentEl = document.getElementById('boardModalContent');
+        var downloadEl = document.getElementById('boardModalDownload');
+        var copyEl = document.getElementById('boardModalCopy');
+
+        if (isFile) {
+            contentEl.hidden = true;
+            downloadEl.hidden = false;
+            downloadEl.href = card.dataset.downloadUrl;
+            copyEl.hidden = true;
+        } else {
+            contentEl.hidden = false;
+            contentEl.textContent = card.dataset.content;
+            downloadEl.hidden = true;
+            copyEl.hidden = false;
+        }
+
+        var deleteForm = document.getElementById('boardModalDeleteForm');
+        deleteForm.action = card.dataset.deleteUrl;
+        // Always use *this* viewer's own CSRF token — cards carry no forms
+        // of their own, so there's nothing stale to worry about here.
+        var csrfInput = deleteForm.querySelector('input[name="csrf_token"]');
         var meta = document.querySelector('meta[name="csrf-token"]');
         if (csrfInput && meta) {
             csrfInput.value = meta.content;
         }
+        deleteForm.onsubmit = function () {
+            return confirm(isFile ? 'Delete this file for everyone?' : 'Remove this text for everyone?');
+        };
+
+        updateCountdowns();
+
+        overlay.hidden = false;
+        document.body.classList.add('board-modal-open');
     }
 
-    function initFileUpdates(source) {
-        var grid = document.getElementById('filesGrid');
-        var emptyState = document.getElementById('emptyState');
-        if (!grid || !emptyState) {
-            return;
-        }
-
-        source.addEventListener('file-added', function (event) {
-            var payload = JSON.parse(event.data);
-            if (document.getElementById('file-card-' + payload.id)) {
-                return;
-            }
-            grid.insertAdjacentHTML('afterbegin', payload.html);
-            var newCard = document.getElementById('file-card-' + payload.id);
-            rebindCsrfToken(newCard);
-            updateCountdowns();
-            syncVisibility(grid, emptyState);
-        });
-
-        source.addEventListener('file-removed', function (event) {
-            var payload = JSON.parse(event.data);
-            var card = document.getElementById('file-card-' + payload.id);
-            if (card) {
-                card.remove();
-            }
-            syncVisibility(grid, emptyState);
-        });
+    function closeBoardModal() {
+        var overlay = document.getElementById('boardModalOverlay');
+        if (!overlay) return;
+        overlay.hidden = true;
+        document.body.classList.remove('board-modal-open');
     }
 
-    function initClipboardUpdates(source) {
-        var list = document.getElementById('clipboardList');
-        var emptyState = document.getElementById('clipboardEmptyState');
-        if (!list || !emptyState) {
-            return;
-        }
+    function initBoardModal() {
+        var overlay = document.getElementById('boardModalOverlay');
+        var closeBtn = document.getElementById('boardModalClose');
+        var copyEl = document.getElementById('boardModalCopy');
+        if (!overlay) return;
 
-        source.addEventListener('clip-added', function (event) {
-            var payload = JSON.parse(event.data);
-            if (document.getElementById('clip-card-' + payload.id)) {
-                return;
-            }
-            list.insertAdjacentHTML('afterbegin', payload.html);
-            var newCard = document.getElementById('clip-card-' + payload.id);
-            rebindCsrfToken(newCard);
-            updateCountdowns();
-            syncVisibility(list, emptyState);
+        if (closeBtn) closeBtn.addEventListener('click', closeBoardModal);
+        overlay.addEventListener('click', function (event) {
+            if (event.target === overlay) closeBoardModal();
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && !overlay.hidden) closeBoardModal();
         });
 
-        source.addEventListener('clip-removed', function (event) {
-            var payload = JSON.parse(event.data);
-            var card = document.getElementById('clip-card-' + payload.id);
-            if (card) {
-                card.remove();
-            }
-            syncVisibility(list, emptyState);
-        });
-
-        // Copy-to-clipboard, delegated so it also covers cards inserted live.
-        list.addEventListener('click', function (event) {
-            var button = event.target.closest('.clip-copy');
-            if (!button) {
-                return;
-            }
-            var card = button.closest('.clip-card');
-            var content = card && card.querySelector('.clip-content');
-            if (!content) {
-                return;
-            }
-            copyText(content.textContent).then(function () {
-                var originalText = button.textContent;
-                button.classList.add('copied');
-                button.textContent = 'Copied!';
-                setTimeout(function () {
-                    button.classList.remove('copied');
-                    button.textContent = originalText;
-                }, 1500);
+        var copyLabel = document.getElementById('boardModalCopyLabel');
+        if (copyEl && copyLabel) {
+            copyEl.addEventListener('click', function () {
+                var content = document.getElementById('boardModalContent');
+                if (!content) return;
+                copyText(content.textContent).then(function () {
+                    var originalText = copyLabel.textContent;
+                    copyEl.classList.add('copied');
+                    copyLabel.textContent = 'Copied!';
+                    setTimeout(function () {
+                        copyEl.classList.remove('copied');
+                        copyLabel.textContent = originalText;
+                    }, 1500);
+                });
             });
-        });
+        }
     }
 
     function copyText(text) {
@@ -441,6 +519,7 @@
 
         initSenderNameFields();
         initProfileBar();
+        initBoardModal();
 
         if (typeof EventSource === 'undefined') {
             return;
@@ -449,8 +528,7 @@
         var streamUrl = '/events/stream?visitor_id=' + encodeURIComponent(getVisitorId())
             + '&name=' + encodeURIComponent(getDisplayName());
         var source = new EventSource(streamUrl);
-        initFileUpdates(source);
-        initClipboardUpdates(source);
+        initBoardUpdates(source);
         initPresenceSidebar(source);
         // EventSource reconnects automatically on drop/error; nothing to do here.
     }

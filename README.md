@@ -6,7 +6,7 @@ A lightweight, secure file and text sharing application designed to seamlessly t
 
 ## 🌟 Overview
 
-FileShare turns any laptop or desktop into a tiny, private sharing hub for everyone on the same network. Upload a file from your phone and grab it on your laptop. Paste a Wi-Fi password or a link on one device and watch it appear — live, no refresh — on everyone else's screen. It works across operating systems (macOS, Windows, Linux, Android, iOS) — anything with a web browser can join in.
+FileShare turns any laptop or desktop into a tiny, private sharing hub for everyone on the same network. Everything — files and text alike — lands on one shared **Board** the moment it's sent, and everything you need to send something is right there on that same screen; there's no separate upload page to navigate to. Upload a file from your phone and grab it on your laptop. Paste a Wi-Fi password or a link on one device and watch it pin itself to the board — live, no refresh — on everyone else's screen. Click anything on the board to see the full details. It works across operating systems (macOS, Windows, Linux, Android, iOS) — anything with a web browser can join in.
 
 Built with Flask and vanilla JavaScript, FileShare provides a clean, minimalist interface that's fully responsive from phone to desktop.
 
@@ -16,8 +16,8 @@ Built with Flask and vanilla JavaScript, FileShare provides a clean, minimalist 
 
 <table>
 <tr>
-<td align="center" width="50%"><b>Home — Public Clipboard &amp; Shared Files</b><br><img src="screenshots/desktop_home.png" width="420" alt="FileShare home page on desktop, showing the public clipboard and shared files grid"></td>
-<td align="center" width="50%"><b>Share a File</b><br><img src="screenshots/desktop_share.png" width="420" alt="FileShare share page on desktop, showing the drag-and-drop upload area"></td>
+<td align="center" width="50%"><b>The Board — files &amp; text, share panel below</b><br><img src="screenshots/desktop_home.png" width="420" alt="FileShare home page on desktop, showing the board of shared files and text plus the inline share panel"></td>
+<td align="center" width="50%"><b>Click anything for the full details</b><br><img src="screenshots/desktop_modal.png" width="420" alt="FileShare detail modal on desktop, showing the full text of a shared clipboard entry"></td>
 </tr>
 </table>
 
@@ -25,8 +25,8 @@ Built with Flask and vanilla JavaScript, FileShare provides a clean, minimalist 
 
 <table>
 <tr>
-<td align="center" width="50%"><b>Home</b><br><img src="screenshots/mobile_home.png" width="220" alt="FileShare home page on a mobile phone"></td>
-<td align="center" width="50%"><b>Share a File</b><br><img src="screenshots/mobile_share.png" width="220" alt="FileShare share page on a mobile phone"></td>
+<td align="center" width="50%"><b>The Board</b><br><img src="screenshots/mobile_home.png" width="220" alt="FileShare home page on a mobile phone"></td>
+<td align="center" width="50%"><b>Detail view</b><br><img src="screenshots/mobile_modal.png" width="220" alt="FileShare detail modal on a mobile phone, showing a shared file's details"></td>
 </tr>
 </table>
 
@@ -34,11 +34,14 @@ Built with Flask and vanilla JavaScript, FileShare provides a clean, minimalist 
 
 ## ✨ Key Features
 
+- 📌 **One Board For Everything** - Files and pasted text land on the same live board, newest first — no separate pages
+- 🖱️ **Click For Details** - The board shows a compact preview; click any card to see the full text, filename, sender, and actions
+- 📤 **Share Without Leaving the Page** - Drag-and-drop a file or paste text right from the home screen — sharing never navigates you away
 - 🚀 **Fast Local Transfer** - Share files instantly across devices on your network
 - 📋 **Public Clipboard** - Paste text and have it appear live on every connected device, ready to copy
 - 🙋 **Optional Display Name** - Set a name once per browser tab and it's attached to everything you send; leave it blank and you're just "Anonymous"
 - 👀 **Who's Here** - A live sidebar shows everyone currently connected, named or anonymous, updating in real time
-- ⚡ **Live Updates** - Files and clipboard text appear and disappear on every screen instantly, no refresh needed
+- ⚡ **Live Updates** - The board updates on every screen instantly, no refresh needed
 - ⏱️ **Self-Cleaning** - Everything shared automatically disappears 5 minutes later, so nothing piles up
 - 🔒 **Local Network Only** - Files never leave your network, ensuring privacy
 - 📱 **Fully Responsive** - Works seamlessly on desktop, tablet, and mobile
@@ -112,33 +115,35 @@ At the top of every page there's a **Your name** field. Whatever you type there 
 
 Click the **online** tab on the right edge of the screen to open the "Who's here" sidebar — a live list of everyone currently connected, showing their display name (or "Anonymous"). It updates instantly as people join, rename themselves, or close their tab.
 
-### 4. Share a file
+### 4. Share a file — right from the home screen
 
-1. Click **"Share File"** in the navigation
+1. Scroll to the **Share** panel below the board and make sure the **"Share a File"** tab is selected
 2. Drag and drop a file onto the upload area, or click to browse
 3. Click **"Share File Now"**
-4. Your file instantly appears in **Shared Files** on every connected device, credited to your display name (or "Anonymous")
+4. It instantly pins itself to **the Board** on every connected device, credited to your display name (or "Anonymous") — you never leave the page
 
-### 5. Download a file
+### 5. Share text — same panel, other tab
 
-1. Open FileShare on any device on the network
-2. Find the file in the **Shared Files** grid
-3. Click **"Download"**
+1. Click the **"Share Text"** tab in the same panel
+2. Type or paste your text
+3. Click **"Share Text"**
+4. It appears on the board instantly, everywhere — no refresh needed
 
-### 6. Use the Public Clipboard
+### 6. See what's on the board, and get the full details
 
-1. On the home page, type or paste text into the **Public Clipboard** box
-2. Click **"Share Text"**
-3. It appears instantly on every other connected device — no refresh needed
-4. Anyone can click **"Copy"** to copy it straight to their own clipboard
+The board shows a compact preview of everything shared: who sent it and how much time it has left. **Click any card** to open its full details — for a file, that's the complete filename plus a **Download** button; for text, it's the complete, un-truncated content plus a **Copy** button. Either way, you'll also find a **Delete** button there.
 
-### 7. Clean up early (optional)
+### 7. Download a file
 
-Click **"Delete"** on any file or clipboard entry to remove it immediately for everyone. If you don't, it's removed automatically anyway — see below.
+Click its card on the board, then click **Download** in the detail view that opens.
 
-### 8. Let things clean themselves up
+### 8. Clean up early (optional)
 
-Every file and every clipboard entry is automatically deleted **5 minutes** after it's shared, so the server never accumulates old data. There's nothing to do — just re-share something if it's needed longer.
+Open a card's details and click **Delete** to remove it immediately for everyone. If you don't, it's removed automatically anyway — see below.
+
+### 9. Let things clean themselves up
+
+Everything on the board is automatically deleted **5 minutes** after it's shared, so the server never accumulates old data. There's nothing to do — just re-share something if it's needed longer.
 
 ## 🔐 Security & Privacy
 
@@ -181,7 +186,7 @@ For optimal security when using FileShare:
 ```
 file_share/
 ├── app/                          # Application package
-│   ├── file_server/              # Routes (home, share, delete, media, clipboard, live updates)
+│   ├── file_server/              # Routes (home/board, share, delete, media, clipboard, profile, live updates)
 │   ├── templates/                # HTML templates
 │   ├── static/
 │   │   ├── css/main.css          # All styles (responsive by default)
@@ -208,7 +213,7 @@ file_share/
 - **Responsive Layout**: Adapts to any screen size, from phones to widescreens
 - **Drag & Drop Upload**: Modern file upload with visual feedback
 - **File Preview**: View file details before uploading
-- **Real-Time Updates**: Files and clipboard text appear/disappear on every screen instantly via Server-Sent Events
+- **Real-Time Updates**: The board updates on every screen instantly via Server-Sent Events
 - **Automatic Expiry**: Everything shared is cleaned up 5 minutes after it's posted
 - **No External Dependencies**: All assets are local, works offline
 - **Clean URLs**: Simple, intuitive URL structure

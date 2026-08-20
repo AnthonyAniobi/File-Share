@@ -29,40 +29,49 @@ def home():
     items = SharedItem.query.order_by(SharedItem.uploaded_at.desc()).all()
     clips = ClipboardEntry.query.order_by(ClipboardEntry.created_at.desc()).all()
 
+    # One merged, recency-sorted feed for the board — files and text
+    # interleaved by whichever was actually shared most recently.
+    board_entries = sorted(
+        [("file", item) for item in items] + [("clip", clip) for clip in clips],
+        key=lambda pair: pair[1].uploaded_at if pair[0] == "file" else pair[1].created_at,
+        reverse=True,
+    )
+
     hostname = socket.gethostname()
     ip_address = socket.gethostbyname(hostname)
 
-    return render_template("home.html", items=items, clips=clips, ip_address=ip_address)
+    return render_template("home.html", board_entries=board_entries, ip_address=ip_address)
 
 
 @bp.route("/share/", methods=["GET", "POST"])
 def share():
-    if request.method == "POST":
-        uploaded_file = request.files.get("file")
-        if uploaded_file is None or uploaded_file.filename == "":
-            flash("Please choose a file to share.", "error")
-            return redirect(url_for("file_server.share"))
-
-        shared_by = (request.form.get("name") or "").strip() or "Anonymous"
-
-        upload_dir = current_app.config["SHARED_UPLOAD_DIR"]
-        upload_dir.mkdir(parents=True, exist_ok=True)
-
-        filename = get_unique_filename(upload_dir, uploaded_file.filename)
-        uploaded_file.save(upload_dir / filename)
-
-        item = SharedItem(file_path=f"shared/{filename}", shared_by=shared_by)
-        db.session.add(item)
-        db.session.commit()
-
-        publish("file-added", {
-            "id": item.id,
-            "html": render_template("_file_card.html", item=item),
-        })
-
+    if request.method == "GET":
+        # Sharing now happens inline on the home page; send old links there.
         return redirect(url_for("file_server.home"))
 
-    return render_template("share.html")
+    uploaded_file = request.files.get("file")
+    if uploaded_file is None or uploaded_file.filename == "":
+        flash("Please choose a file to share.", "error")
+        return redirect(url_for("file_server.home"))
+
+    shared_by = (request.form.get("name") or "").strip() or "Anonymous"
+
+    upload_dir = current_app.config["SHARED_UPLOAD_DIR"]
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = get_unique_filename(upload_dir, uploaded_file.filename)
+    uploaded_file.save(upload_dir / filename)
+
+    item = SharedItem(file_path=f"shared/{filename}", shared_by=shared_by)
+    db.session.add(item)
+    db.session.commit()
+
+    publish("file-added", {
+        "id": item.id,
+        "html": render_template("_board_card.html", kind="file", item=item),
+    })
+
+    return redirect(url_for("file_server.home"))
 
 
 @bp.route("/delete/<int:pk>/", methods=["POST"])
@@ -97,7 +106,7 @@ def clipboard_add():
 
     publish("clip-added", {
         "id": entry.id,
-        "html": render_template("_clip_card.html", entry=entry),
+        "html": render_template("_board_card.html", kind="clip", item=entry),
     })
 
     return redirect(url_for("file_server.home"))

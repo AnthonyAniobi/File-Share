@@ -130,6 +130,27 @@
         }
     }
 
+    // Share panel tab switcher (File / Text)
+    function initShareTabs() {
+        const tabs = document.querySelectorAll('.share-tab');
+        if (!tabs.length) return;
+
+        tabs.forEach((tab) => {
+            tab.addEventListener('click', () => {
+                tabs.forEach((t) => {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                });
+                tab.classList.add('active');
+                tab.setAttribute('aria-selected', 'true');
+
+                document.querySelectorAll('.share-form').forEach((form) => {
+                    form.hidden = form.id !== tab.getAttribute('data-target');
+                });
+            });
+        });
+    }
+
     // Smooth scroll for anchor links
     function initSmoothScroll() {
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -162,17 +183,20 @@
             });
         }, observerOptions);
 
-        document.querySelectorAll('.file-card, .card').forEach(el => {
+        document.querySelectorAll('.board-card, .card').forEach(el => {
             observer.observe(el);
         });
     }
 
     // Initialize on DOM ready
     function init() {
-        // Initialize drag and drop if on share page
+        // Initialize drag and drop if the share panel is present
         if (document.getElementById('dropZone')) {
             new DragDropUpload('dropZone', 'fileInput');
         }
+
+        // Initialize the share panel's File/Text tab switcher
+        initShareTabs();
 
         // Initialize smooth scroll
         initSmoothScroll();

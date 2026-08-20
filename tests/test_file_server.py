@@ -10,18 +10,18 @@ from app.models import SharedItem
 def test_home_page_loads(client):
     response = client.get("/")
     assert response.status_code == 200
-    assert b"Shared Files" in response.data
+    assert b"The Board" in response.data
 
 
 def test_home_page_shows_empty_state_with_no_files(client):
     response = client.get("/")
-    assert b"No files shared yet" in response.data
+    assert b"The board is empty" in response.data
 
 
-def test_share_page_loads(client):
+def test_share_page_redirects_to_home(client):
     response = client.get("/share/")
-    assert response.status_code == 200
-    assert b"Share a File" in response.data
+    assert response.status_code == 302
+    assert response.headers["Location"] == "/"
 
 
 def test_share_without_file_redirects_with_error(client):
