@@ -127,7 +127,11 @@ def clipboard_delete(pk):
 
 @bp.route("/media/<path:filename>")
 def media(filename):
-    return send_from_directory(current_app.config["MEDIA_ROOT"], filename)
+    # as_attachment forces Content-Disposition: attachment, so the browser
+    # always saves the file instead of trying to display it inline — the
+    # client-side `download` attribute alone isn't reliable enough (mobile
+    # Safari/Chrome in particular tend to just open viewable file types).
+    return send_from_directory(current_app.config["MEDIA_ROOT"], filename, as_attachment=True)
 
 
 @bp.route("/events/stream")

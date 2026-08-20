@@ -86,6 +86,10 @@ def test_shared_file_is_downloadable(client, app):
     response = client.get(download_url)
     assert response.status_code == 200
     assert response.data == b"hello world"
+    # Must be "attachment", not "inline" — otherwise browsers (mobile
+    # Safari/Chrome especially) may just display the file instead of
+    # downloading it, regardless of the client-side `download` attribute.
+    assert response.headers["Content-Disposition"].startswith("attachment")
 
 
 def test_expired_files_are_deleted(client, app):
