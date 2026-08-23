@@ -151,9 +151,12 @@
         });
     }
 
-    // Smooth scroll for anchor links
+    // Smooth scroll for anchor links. Excludes [download] links: the modal's
+    // Download button starts out as a href="#" placeholder before JS points
+    // it at the real file URL, and a permanent preventDefault() here would
+    // silently swallow every future click on it even after the href changes.
     function initSmoothScroll() {
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        document.querySelectorAll('a[href^="#"]:not([download])').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
